@@ -112,6 +112,14 @@ func TestNewRecord(t *testing.T) {
 }
 
 func TestRecord(t *testing.T) {
+	t.Run("get", func(t *testing.T) {
+		record := &Record{}
+		record.Set("hello", "world")
+		got, err := record.Get("hello")
+		assert.Nil(t, err)
+		assert.Equal(t, "world", got)
+	})
+
 	t.Run("string", func(t *testing.T) {
 		record := &Record{}
 		record.Set("hello", "world")
@@ -153,6 +161,9 @@ func TestRecord(t *testing.T) {
 			err    error
 		)
 
+		_, err = record.Get("hello")
+		assert.True(t, IsFieldNotFoundError(err))
+
 		_, err = record.String("hello")
 		assert.True(t, IsFieldNotFoundError(err))
 
@@ -186,4 +197,13 @@ func TestRecord(t *testing.T) {
 		_, err = record.Float64("hello")
 		assert.True(t, IsWrongTypeError(err))
 	})
+}
+
+func TestRecordDelete(t *testing.T) {
+	record := &Record{}
+	record.Set("a", "alpha")
+	record.Set("b", "bravo")
+	record.Delete("a")
+	want := map[string]interface{}{"b": "bravo"}
+	assert.Equal(t, want, record.Copy())
 }
