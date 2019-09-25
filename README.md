@@ -16,6 +16,7 @@ func main() {
     task.Canonicalize(toCanonical),
     task.Normalize("foo", normalizer)
   )
+  stream.Use(middleware)
 
   ctx := context.Background()
   record := &dag.Record{}
