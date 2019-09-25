@@ -1,5 +1,7 @@
 package task
 
+// FieldMapperFunc renames a field into another field. FieldMapperFunc should return
+// the original field name if no mapping is to be performed.
 type FieldMapperFunc func(string) (string, error)
 
 type ValueMapperFunc func(interface{}) (interface{}, error)
