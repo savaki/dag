@@ -5,6 +5,7 @@ import (
 	"errors"
 	"sort"
 	"sync"
+	"time"
 
 	"golang.org/x/xerrors"
 
@@ -21,10 +22,35 @@ func IsFieldNotFoundError(err error) bool {
 	return xerrors.Is(err, errFieldNotFound)
 }
 
+// IsWrongTypeError if the requested type was incorrect
+func IsWrongTypeError(err error) bool {
+	return xerrors.Is(err, errWrongType)
+}
+
+// Meta provides READ ONLY metadata for the record
+type Meta struct {
+	ID         string
+	StartedAt  time.Time
+	Properties map[string]string
+}
+
 // Record to be modified
 type Record struct {
+	meta    Meta
 	content map[string]interface{}
 	mutex   sync.Mutex
+}
+
+// NewRecord constructs a new record
+func NewRecord(meta Meta) *Record {
+	return &Record{
+		meta: meta,
+	}
+}
+
+// Meta data for record
+func (r *Record) Meta() Meta {
+	return r.meta
 }
 
 func (r *Record) get(key string) (interface{}, error) {
@@ -128,19 +154,6 @@ func (r *Record) Fields() (fields []string) {
 	return fields
 }
 
-func (r *Record) Merge(that map[string]interface{}) {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-
-	if r.content == nil {
-		r.content = map[string]interface{}{}
-	}
-
-	for k, v := range that {
-		r.content[k] = v
-	}
-}
-
 // String value
 func (r *Record) String(field string) (string, error) {
 	r.mutex.Lock()
@@ -179,6 +192,14 @@ type Task interface {
 	Apply(ctx context.Context, record *Record) error
 }
 
+// Runner provides task with some metadata
+type Runner interface {
+	Task
+
+	// Use middleware with EACH Task
+	Use(middleware ...func(Task) Task)
+}
+
 // TaskFunc provides a functional interface for Task
 type TaskFunc func(ctx context.Context, record *Record) error
 
@@ -188,10 +209,12 @@ func (fn TaskFunc) Apply(ctx context.Context, record *Record) error {
 }
 
 type parallel struct {
-	tasks []Task
+	middleware []func(Task) Task
+	raw        []Task
+	tasks      []Task
 }
 
-func (p parallel) Apply(ctx context.Context, record *Record) error {
+func (p *parallel) Apply(ctx context.Context, record *Record) error {
 	group, ctx := errgroup.WithContext(ctx)
 	for _, t := range p.tasks {
 		task := t
@@ -202,16 +225,26 @@ func (p parallel) Apply(ctx context.Context, record *Record) error {
 	return group.Wait()
 }
 
+func (p *parallel) Use(middleware ...func(Task) Task) {
+	p.middleware = append(p.middleware, middleware...)
+	p.tasks = wrap(p.raw, p.middleware...)
+}
+
 // Parallel executes the requested tasks in parallel
-func Parallel(tasks ...Task) Task {
-	return parallel{tasks: tasks}
+func Parallel(tasks ...Task) Runner {
+	return &parallel{
+		raw:   tasks,
+		tasks: tasks,
+	}
 }
 
 type serial struct {
-	tasks []Task
+	middleware []func(Task) Task
+	raw        []Task
+	tasks      []Task
 }
 
-func (s serial) Apply(ctx context.Context, record *Record) error {
+func (s *serial) Apply(ctx context.Context, record *Record) error {
 	for _, task := range s.tasks {
 		if err := task.Apply(ctx, record); err != nil {
 			return err
@@ -220,7 +253,27 @@ func (s serial) Apply(ctx context.Context, record *Record) error {
 	return nil
 }
 
+func (s *serial) Use(middleware ...func(Task) Task) {
+	s.middleware = append(s.middleware, middleware...)
+	s.tasks = wrap(s.raw, s.middleware...)
+}
+
 // Serial applies the tasks in serial
-func Serial(tasks ...Task) Task {
-	return serial{tasks: tasks}
+func Serial(tasks ...Task) Runner {
+	return &serial{
+		raw:   tasks,
+		tasks: tasks,
+	}
+}
+
+func wrap(tasks []Task, middleware ...func(Task) Task) []Task {
+	var wrapped []Task
+	for _, t := range tasks {
+		task := t
+		for _, m := range middleware {
+			task = m(task)
+		}
+		wrapped = append(wrapped, task)
+	}
+	return wrapped
 }

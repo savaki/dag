@@ -1,4 +1,6 @@
 [![GoDoc](https://godoc.org/github.com/savaki/dag?status.svg)](https://godoc.org/github.com/savaki/dag)
+[![Go Report Card](https://goreportcard.com/badge/github.com/savaki/dag)](https://goreportcard.com/report/github.com/savaki/dag)
+[![Coverage Status](https://coveralls.io/repos/github/savaki/dag/badge.svg)](https://coveralls.io/github/savaki/dag)
 
 dag
 -----------------------

@@ -27,7 +27,21 @@ func NewKeyFunc(field string, fields ...string) KeyFunc {
 	}
 
 	return func(record *dag.Record) (string, error) {
-		var parts []string
+		parts := make([]string, 0, len(fields)+1)
+
+		v, err := record.String(field)
+		if err != nil {
+			return "", err
+		}
+		parts = append(parts, v)
+
+		for _, field := range fields {
+			v, err := record.String(field)
+			if err != nil {
+				return "", err
+			}
+			parts = append(parts, v)
+		}
 
 		return strings.Join(parts, ":"), nil
 	}
