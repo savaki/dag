@@ -11,10 +11,7 @@ func Normalize(field string, normalizeFunc ValueMapperFunc) dag.TaskFunc {
 	return func(ctx context.Context, record *dag.Record) error {
 		v, err := record.Get(field)
 		if err != nil {
-			if dag.IsFieldNotFoundError(err) {
-				return nil
-			}
-			return err
+			return nil
 		}
 
 		normalized, err := normalizeFunc(v)

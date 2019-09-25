@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"io"
 	"strings"
 	"testing"
 
@@ -39,5 +40,16 @@ func TestNormalize(t *testing.T) {
 		err := task.Apply(ctx, record)
 		assert.Nil(t, err)
 		assert.Equal(t, want, record.Copy())
+	})
+
+	t.Run("normalizer failed", func(t *testing.T) {
+		want := io.ErrUnexpectedEOF
+		boom := func(interface{}) (interface{}, error) { return nil, want }
+		record := &dag.Record{}
+		record.Set("hello", "world")
+
+		task := Normalize("hello", boom)
+		err := task.Apply(ctx, record)
+		assert.Equal(t, want, err)
 	})
 }
