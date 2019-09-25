@@ -31,7 +31,7 @@ func Test_toString(t *testing.T) {
 
 func TestNewKeyFunc(t *testing.T) {
 	t.Run("single", func(t *testing.T) {
-		fn := NewKeyFunc("hello")
+		fn := BasicKeyFunc("hello")
 		record := &dag.Record{}
 		record.Set("hello", "world")
 
@@ -41,7 +41,7 @@ func TestNewKeyFunc(t *testing.T) {
 	})
 
 	t.Run("multiple", func(t *testing.T) {
-		fn := NewKeyFunc("a", "b")
+		fn := BasicKeyFunc("a", "b")
 		record := &dag.Record{}
 		record.Set("a", "alpha")
 		record.Set("b", "bravo")

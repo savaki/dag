@@ -4,6 +4,7 @@ package task
 // the original field name if no mapping is to be performed.
 type FieldMapperFunc func(string) (string, error)
 
+// ValueMapperFunc performs transformation on a field value
 type ValueMapperFunc func(interface{}) (interface{}, error)
 
 type options struct {
@@ -11,20 +12,24 @@ type options struct {
 	mapField FieldMapperFunc
 }
 
+// Option provides functional options
 type Option func(*options)
 
+// WithFields limits an enrichment to the specified fields
 func WithFields(fields ...string) Option {
 	return func(o *options) {
 		o.fields = fields
 	}
 }
 
+// WithFieldMapper performs transformation on the field name; useful for canonicalization
 func WithFieldMapper(fn FieldMapperFunc) Option {
 	return func(o *options) {
 		o.mapField = fn
 	}
 }
 
+// WithPrefix applies a prefix to each enrichment prior to the enrichment
 func WithPrefix(prefix string) Option {
 	return func(o *options) {
 		o.mapField = func(field string) (string, error) {

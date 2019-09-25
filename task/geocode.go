@@ -10,7 +10,9 @@ import (
 	"golang.org/x/xerrors"
 )
 
+// Geocoder provides a general mechanism to enrich a record with geocode information
 type Geocoder interface {
+	// Lookup the provided address
 	Lookup(ctx context.Context, street, city, state string) (map[string]interface{}, error)
 }
 
@@ -20,6 +22,7 @@ func (fn geocoderFunc) Lookup(ctx context.Context, street, city, state string) (
 	return fn(ctx, street, city, state)
 }
 
+// Geocode enriches a record with geocode information
 func Geocode(geocoder Geocoder, street, city, state string, opts ...Option) dag.TaskFunc {
 	options := makeOptions(opts...)
 

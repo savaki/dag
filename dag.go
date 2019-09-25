@@ -7,9 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/xerrors"
-
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/xerrors"
 )
 
 var (

@@ -22,11 +22,13 @@ func Enrich(ds DataSource, keyFunc KeyFunc, opts ...Option) dag.TaskFunc {
 		}
 
 		if len(options.fields) == 0 {
-			options.fields = that.Fields()
+			for k := range that {
+				options.fields = append(options.fields, k)
+			}
 		}
 
 		for _, field := range options.fields {
-			if v, err := that.Get(field); err == nil {
+			if v, ok := that[field]; ok {
 				if mapped, err := options.mapField(field); err == nil {
 					record.Set(mapped, v)
 				}

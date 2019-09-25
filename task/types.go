@@ -9,13 +9,17 @@ import (
 	"github.com/savaki/dag"
 )
 
+// DataSource provides an abstraction for a remote data source for enrichment
 type DataSource interface {
-	Get(ctx context.Context, key string) (*dag.Record, error)
+	// Get the record from the remote data source
+	Get(ctx context.Context, key string) (map[string]interface{}, error)
 }
 
+// KeyFunc constructs a lookup key given a record.  Returns nil if the fields are not found
 type KeyFunc func(record *dag.Record) (string, error)
 
-func NewKeyFunc(field string, fields ...string) KeyFunc {
+// BasicKeyFunc returns a key func that simply concatenates the requested fields together
+func BasicKeyFunc(field string, fields ...string) KeyFunc {
 	if len(fields) == 0 {
 		return func(record *dag.Record) (string, error) {
 			v, err := record.String(field)
@@ -47,29 +51,25 @@ func NewKeyFunc(field string, fields ...string) KeyFunc {
 	}
 }
 
+// MapDataSource provides a test interface for data source
 type MapDataSource map[string]interface{}
 
-func (s MapDataSource) Get(ctx context.Context, key string) (*dag.Record, error) {
-	record := &dag.Record{}
-	for k, v := range s {
-		record.Set(k, v)
-	}
-	return record, nil
+// Get implements DataSource
+func (s MapDataSource) Get(ctx context.Context, key string) (map[string]interface{}, error) {
+	return s, nil
 }
 
+// NestedMapDataSource provides another data source for testing
 type NestedMapDataSource map[string]map[string]interface{}
 
-func (s NestedMapDataSource) Get(ctx context.Context, key string) (*dag.Record, error) {
+// Get implements DataSource
+func (s NestedMapDataSource) Get(ctx context.Context, key string) (map[string]interface{}, error) {
 	m, ok := s[key]
 	if !ok {
 		return nil, fmt.Errorf("key, %v, not found", key)
 	}
 
-	record := &dag.Record{}
-	for k, v := range m {
-		record.Set(k, v)
-	}
-	return record, nil
+	return m, nil
 }
 
 func toString(raw interface{}) string {
