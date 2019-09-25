@@ -60,6 +60,7 @@ func (r *Record) get(key string) (interface{}, error) {
 	return v, nil
 }
 
+// Copy exports a copy of the internal record data
 func (r *Record) Copy() map[string]interface{} {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
@@ -71,6 +72,7 @@ func (r *Record) Copy() map[string]interface{} {
 	return dupe
 }
 
+// Delete the requested fields
 func (r *Record) Delete(fields ...string) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
@@ -142,6 +144,7 @@ func (r *Record) Int64(field string) (int64, error) {
 	return v, nil
 }
 
+// Fields returns the list of fields encoded within the Record
 func (r *Record) Fields() (fields []string) {
 	r.mutex.Lock()
 	for k := range r.content {
