@@ -14,5 +14,9 @@ func main() {
     task.Canonicalize(toCanonical),
     task.Normalize("foo", normalizer)
   )
+
+  ctx := context.Background()
+  record := &dag.Record{}
+  err := task.Apply(ctx, record)
 }
 ```
