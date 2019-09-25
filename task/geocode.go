@@ -23,10 +23,10 @@ func (fn geocoderFunc) Lookup(ctx context.Context, street, city, state string) (
 }
 
 // Geocode enriches a record with geocode information
-func Geocode(geocoder Geocoder, street, city, state string, opts ...Option) dag.TaskFunc {
+func Geocode(label string, geocoder Geocoder, street, city, state string, opts ...Option) dag.Task {
 	options := makeOptions(opts...)
 
-	return func(ctx context.Context, record *dag.Record) error {
+	return withName(label, func(ctx context.Context, record *dag.Record) error {
 		theStreet, _ := record.String(street)
 		theCity, _ := record.String(city)
 		theState, _ := record.String(state)
@@ -53,7 +53,7 @@ func Geocode(geocoder Geocoder, street, city, state string, opts ...Option) dag.
 		}
 
 		return nil
-	}
+	})
 }
 
 // SmartyStreets provides a SmartyStreets Geocoder.  If a nil transport is provided,

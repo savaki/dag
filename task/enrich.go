@@ -7,10 +7,10 @@ import (
 )
 
 // Enrich a record from the specified data source
-func Enrich(ds DataSource, keyFunc KeyFunc, opts ...Option) dag.TaskFunc {
+func Enrich(label string, ds DataSource, keyFunc KeyFunc, opts ...Option) dag.Task {
 	options := makeOptions(opts...)
 
-	return func(ctx context.Context, record *dag.Record) error {
+	return withName(label, func(ctx context.Context, record *dag.Record) error {
 		key, err := keyFunc(record)
 		if err != nil {
 			return err
@@ -36,5 +36,5 @@ func Enrich(ds DataSource, keyFunc KeyFunc, opts ...Option) dag.TaskFunc {
 		}
 
 		return nil
-	}
+	})
 }

@@ -7,9 +7,9 @@ import (
 )
 
 // Delete removes the specified fields from the Record if they exist
-func Delete(fields ...string) dag.TaskFunc {
-	return func(ctx context.Context, record *dag.Record) error {
+func Delete(label string, fields ...string) dag.Task {
+	return withName(label, func(ctx context.Context, record *dag.Record) error {
 		record.Delete(fields...)
 		return nil
-	}
+	})
 }

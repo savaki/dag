@@ -19,7 +19,7 @@ func TestCanonicalize(t *testing.T) {
 	record.Set("hello", "world")
 
 	ctx := context.Background()
-	task := Canonicalize(mapField)
+	task := Canonicalize("test", mapField)
 
 	// When
 	err := task.Apply(ctx, record)
@@ -36,7 +36,7 @@ func TestCanonicalize_NoChange(t *testing.T) {
 	record.Set("hello", "world")
 
 	ctx := context.Background()
-	task := Canonicalize(mapField)
+	task := Canonicalize("test", mapField)
 
 	// When
 	err := task.Apply(ctx, record)
@@ -52,7 +52,7 @@ func TestCanonicalize_Error(t *testing.T) {
 	record.Set("hello", "world")
 
 	ctx := context.Background()
-	task := Canonicalize(mapField)
+	task := Canonicalize("test", mapField)
 
 	// When
 	err := task.Apply(ctx, record)

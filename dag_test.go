@@ -2,6 +2,7 @@ package dag
 
 import (
 	"context"
+	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -206,4 +207,62 @@ func TestRecordDelete(t *testing.T) {
 	record.Delete("a")
 	want := map[string]interface{}{"b": "bravo"}
 	assert.Equal(t, want, record.Copy())
+}
+
+func nopTask() TaskFunc {
+	return func(ctx context.Context, record *Record) error {
+		return nil
+	}
+}
+
+func Test_wrap(t *testing.T) {
+	var stack []string
+	task := Serial(
+		WithName("a", nopTask()),
+		Serial(Serial(WithName("b", nopTask()))),
+		Parallel(WithName("c", nopTask())),
+	)
+	task.Use(func(t Task) Task {
+		return TaskFunc(func(ctx context.Context, record *Record) error {
+			name := Name(t)
+			for n := Depth(ctx); n > 1; n-- {
+				fmt.Print("  ")
+			}
+			fmt.Println(name)
+
+			stack = append(stack, name)
+			return t.Apply(ctx, record)
+		})
+	})
+
+	ctx := context.Background()
+	record := &Record{}
+	err := task.Apply(ctx, record)
+	assert.Nil(t, err)
+	assert.Equal(t, []string{"a", "Serial", "Serial", "b", "Parallel", "c"}, stack)
+}
+
+func TestPush(t *testing.T) {
+	ctx := context.Background()
+
+	assert.Equal(t, 0, Depth(ctx))
+
+	child := Push(ctx)
+	assert.Equal(t, 1, Depth(child))
+}
+
+func BenchmarkSerial(t *testing.B) {
+	var (
+		ctx     = context.Background()
+		record  = &Record{}
+		counter int64
+		task    = Serial(counterTask(&counter))
+	)
+
+	for i := 0; i < t.N; i++ {
+		err := task.Apply(ctx, record)
+		if err != nil {
+			t.Fatalf("got %v; want nil", err)
+		}
+	}
 }

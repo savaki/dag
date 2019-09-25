@@ -10,7 +10,7 @@ import (
 
 func TestDelete(t *testing.T) {
 	ctx := context.Background()
-	task := Delete("a", "b")
+	task := Delete("test", "a", "b")
 
 	record := &dag.Record{}
 	record.Set("a", "apple")

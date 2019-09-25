@@ -84,7 +84,7 @@ func TestGeocoder(t *testing.T) {
 		record.Set("city", city)
 		record.Set("state", state)
 		record.Set("street", street)
-		task := Geocode(geocoder, "street", "city", "state")
+		task := Geocode("test", geocoder, "street", "city", "state")
 		err := task.Apply(ctx, record)
 		assert.Nil(t, err)
 		assert.Equal(t, city, gotValues.Get("city"))
@@ -108,7 +108,7 @@ func TestGeocoder(t *testing.T) {
 		record.Set("city", city)
 		record.Set("state", state)
 		record.Set("street", street)
-		task := Geocode(geocoder, "street", "city", "state",
+		task := Geocode("test", geocoder, "street", "city", "state",
 			WithFields("latitude", "longitude"),
 		)
 		err := task.Apply(ctx, record)
@@ -129,7 +129,7 @@ func TestGeocoder(t *testing.T) {
 		record.Set("city", city)
 		record.Set("state", state)
 		record.Set("street", street)
-		task := Geocode(geocoder, "street", "city", "state",
+		task := Geocode("test", geocoder, "street", "city", "state",
 			WithFields("latitude", "longitude"),
 			WithFieldMapper(func(field string) (string, error) {
 				return field[0:3], nil

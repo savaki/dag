@@ -3,6 +3,7 @@ package dag
 import (
 	"context"
 	"errors"
+	"reflect"
 	"sort"
 	"sync"
 	"time"
@@ -31,6 +32,26 @@ type Meta struct {
 	ID         string
 	StartedAt  time.Time
 	Properties map[string]string
+}
+
+type contextKey string
+
+const depthKey contextKey = "depth"
+
+// Depth within the dag
+func Depth(ctx context.Context) int {
+	raw := ctx.Value(depthKey)
+	v, ok := raw.(int)
+	if !ok {
+		return 0
+	}
+	return v
+}
+
+// Push on more level onto the depth counter
+func Push(ctx context.Context) context.Context {
+	n := Depth(ctx)
+	return context.WithValue(ctx, depthKey, n+1)
 }
 
 // Record to be modified
@@ -194,6 +215,43 @@ type Task interface {
 	Apply(ctx context.Context, record *Record) error
 }
 
+// NamedTask allows a task to be named
+type NamedTask interface {
+	Task
+
+	// Name of task
+	Name() string
+}
+
+type namedTask struct {
+	name   string
+	target Task
+}
+
+func (n namedTask) Apply(ctx context.Context, record *Record) error {
+	return n.target.Apply(ctx, record)
+}
+
+func (n namedTask) Name() string {
+	return n.name
+}
+
+// WithName adds a name to a task
+func WithName(name string, target Task) NamedTask {
+	return namedTask{
+		name:   name,
+		target: target,
+	}
+}
+
+// Name of task
+func Name(task Task) string {
+	if v, ok := task.(NamedTask); ok {
+		return v.Name()
+	}
+	return reflect.TypeOf(task).String()
+}
+
 // Runner provides task with some metadata
 type Runner interface {
 	Task
@@ -217,6 +275,7 @@ type parallel struct {
 }
 
 func (p *parallel) Apply(ctx context.Context, record *Record) error {
+	ctx = Push(ctx)
 	group, ctx := errgroup.WithContext(ctx)
 	for _, t := range p.tasks {
 		task := t
@@ -225,6 +284,11 @@ func (p *parallel) Apply(ctx context.Context, record *Record) error {
 		})
 	}
 	return group.Wait()
+}
+
+// Name of parallel task
+func (p *parallel) Name() string {
+	return "Parallel"
 }
 
 func (p *parallel) Use(middleware ...func(Task) Task) {
@@ -247,12 +311,18 @@ type serial struct {
 }
 
 func (s *serial) Apply(ctx context.Context, record *Record) error {
+	ctx = Push(ctx)
 	for _, task := range s.tasks {
 		if err := task.Apply(ctx, record); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// Name of serial task
+func (s *serial) Name() string {
+	return "Serial"
 }
 
 func (s *serial) Use(middleware ...func(Task) Task) {
@@ -269,9 +339,18 @@ func Serial(tasks ...Task) Runner {
 }
 
 func wrap(tasks []Task, middleware ...func(Task) Task) []Task {
+	type usable interface {
+		Use(middleware ...func(Task) Task)
+	}
+
 	var wrapped []Task
 	for _, t := range tasks {
 		task := t
+
+		if v, ok := task.(usable); ok {
+			v.Use(middleware...)
+		}
+
 		for _, m := range middleware {
 			task = m(task)
 		}

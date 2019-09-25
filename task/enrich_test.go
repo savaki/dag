@@ -9,7 +9,7 @@ import (
 )
 
 // staticKey always returns the same value.  useful for just testing
-func staticKey(record *dag.Record) (string, error) {
+func staticKey(_ *dag.Record) (string, error) {
 	return "blah", nil
 }
 
@@ -20,7 +20,7 @@ func TestEnrich(t *testing.T) {
 		var (
 			want   = MapDataSource{"hello": "world"}
 			record = &dag.Record{}
-			task   = Enrich(want, staticKey)
+			task   = Enrich("test", want, staticKey)
 		)
 
 		// When
@@ -36,7 +36,7 @@ func TestEnrich(t *testing.T) {
 				"b": "bravo",
 				"c": "charlie",
 			}
-			task   = Enrich(ds, staticKey, WithFields("a"))
+			task   = Enrich("test", ds, staticKey, WithFields("a"))
 			record = &dag.Record{}
 		)
 
@@ -55,7 +55,7 @@ func TestEnrich(t *testing.T) {
 			ds = MapDataSource{
 				"a": "alpha",
 			}
-			task   = Enrich(ds, staticKey, WithFields("a"), WithPrefix("prefix_"))
+			task   = Enrich("test", ds, staticKey, WithFields("a"), WithPrefix("prefix_"))
 			record = &dag.Record{}
 		)
 

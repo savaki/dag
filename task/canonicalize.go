@@ -7,8 +7,8 @@ import (
 )
 
 // Canonicalize the field names
-func Canonicalize(mapField FieldMapperFunc) dag.TaskFunc {
-	return func(ctx context.Context, record *dag.Record) error {
+func Canonicalize(label string, mapField FieldMapperFunc) dag.Task {
+	return withName(label, func(ctx context.Context, record *dag.Record) error {
 		fields := record.Fields()
 		for _, field := range fields {
 			mapped, err := mapField(field)
@@ -25,5 +25,5 @@ func Canonicalize(mapField FieldMapperFunc) dag.TaskFunc {
 			}
 		}
 		return nil
-	}
+	})
 }
