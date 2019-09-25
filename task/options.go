@@ -23,6 +23,7 @@ func WithFields(fields ...string) Option {
 }
 
 // WithFieldMapper performs transformation on the field name; useful for canonicalization
+// WithFieldMapper cannot be combined with WithPrefix
 func WithFieldMapper(fn FieldMapperFunc) Option {
 	return func(o *options) {
 		o.mapField = fn
@@ -30,6 +31,7 @@ func WithFieldMapper(fn FieldMapperFunc) Option {
 }
 
 // WithPrefix applies a prefix to each enrichment prior to the enrichment
+// WithPrefix cannot be combined with WithFieldMapper
 func WithPrefix(prefix string) Option {
 	return func(o *options) {
 		o.mapField = func(field string) (string, error) {
