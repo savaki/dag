@@ -228,12 +228,21 @@ type namedTask struct {
 	target Task
 }
 
+// Apply invokes this task
 func (n namedTask) Apply(ctx context.Context, record *Record) error {
 	return n.target.Apply(ctx, record)
 }
 
+// Name of task
 func (n namedTask) Name() string {
 	return n.name
+}
+
+// Wrap the children with middleware
+func (n namedTask) Wrap(middleware ...func(Task) Task) {
+	if v, ok := n.target.(TaskContainer); ok {
+		v.Wrap(middleware...)
+	}
 }
 
 // WithName adds a name to a task
@@ -252,12 +261,10 @@ func Name(task Task) string {
 	return reflect.TypeOf(task).String()
 }
 
-// Runner provides task with some metadata
-type Runner interface {
+// TaskContainer provides a container that holds tasks
+type TaskContainer interface {
 	Task
-
-	// Use middleware with EACH Task
-	Use(middleware ...func(Task) Task)
+	Wrap(middleware ...func(Task) Task)
 }
 
 // TaskFunc provides a functional interface for Task
@@ -291,13 +298,13 @@ func (p *parallel) Name() string {
 	return "Parallel"
 }
 
-func (p *parallel) Use(middleware ...func(Task) Task) {
+func (p *parallel) Wrap(middleware ...func(Task) Task) {
 	p.middleware = append(p.middleware, middleware...)
-	p.tasks = wrap(p.raw, p.middleware...)
+	p.tasks = wrapAll(p.raw, p.middleware...)
 }
 
 // Parallel executes the requested tasks in parallel
-func Parallel(tasks ...Task) Runner {
+func Parallel(tasks ...Task) TaskContainer {
 	return &parallel{
 		raw:   tasks,
 		tasks: tasks,
@@ -325,36 +332,38 @@ func (s *serial) Name() string {
 	return "Serial"
 }
 
-func (s *serial) Use(middleware ...func(Task) Task) {
+func (s *serial) Wrap(middleware ...func(Task) Task) {
 	s.middleware = append(s.middleware, middleware...)
-	s.tasks = wrap(s.raw, s.middleware...)
+	s.tasks = wrapAll(s.raw, s.middleware...)
 }
 
 // Serial applies the tasks in serial
-func Serial(tasks ...Task) Runner {
+func Serial(tasks ...Task) TaskContainer {
 	return &serial{
 		raw:   tasks,
 		tasks: tasks,
 	}
 }
 
-func wrap(tasks []Task, middleware ...func(Task) Task) []Task {
-	type usable interface {
-		Use(middleware ...func(Task) Task)
-	}
-
+func wrapAll(tasks []Task, middleware ...func(Task) Task) []Task {
 	var wrapped []Task
 	for _, t := range tasks {
-		task := t
-
-		if v, ok := task.(usable); ok {
-			v.Use(middleware...)
-		}
-
-		for _, m := range middleware {
-			task = m(task)
-		}
-		wrapped = append(wrapped, task)
+		wrapped = append(wrapped, Wrap(t, middleware...))
 	}
 	return wrapped
+}
+
+// Wrap the Task and all its children with the specified middleware
+func Wrap(task Task, middleware ...func(Task) Task) Task {
+	name := Name(task)
+
+	if v, ok := task.(TaskContainer); ok {
+		v.Wrap(middleware...)
+	}
+
+	for _, m := range middleware {
+		task = m(task)
+	}
+
+	return WithName(name, task)
 }

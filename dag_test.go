@@ -26,7 +26,7 @@ func TestParallel(t *testing.T) {
 		var counter int64
 		var order []string
 		task := Parallel(counterTask(&counter))
-		task.Use(middleware(&order, "a"))
+		task.Wrap(middleware(&order, "a"))
 		err := task.Apply(ctx, record)
 		assert.Nil(t, err)
 		assert.Equal(t, 1, int(counter))
@@ -37,7 +37,7 @@ func TestParallel(t *testing.T) {
 		var counter int64
 		var order []string
 		task := Parallel(counterTask(&counter))
-		task.Use(
+		task.Wrap(
 			middleware(&order, "a"),
 			middleware(&order, "b"),
 		)
@@ -64,7 +64,7 @@ func TestSerial(t *testing.T) {
 		var counter int64
 		var order []string
 		task := Serial(counterTask(&counter))
-		task.Use(middleware(&order, "a"))
+		task.Wrap(middleware(&order, "a"))
 		err := task.Apply(ctx, record)
 		assert.Nil(t, err)
 		assert.Equal(t, 1, int(counter))
@@ -75,7 +75,7 @@ func TestSerial(t *testing.T) {
 		var counter int64
 		var order []string
 		task := Serial(counterTask(&counter))
-		task.Use(
+		task.Wrap(
 			middleware(&order, "a"),
 			middleware(&order, "b"),
 		)
@@ -222,7 +222,7 @@ func Test_wrap(t *testing.T) {
 		Serial(Serial(WithName("b", nopTask()))),
 		Parallel(WithName("c", nopTask())),
 	)
-	task.Use(func(t Task) Task {
+	task.Wrap(func(t Task) Task {
 		return TaskFunc(func(ctx context.Context, record *Record) error {
 			name := Name(t)
 			for n := Depth(ctx); n > 1; n-- {
