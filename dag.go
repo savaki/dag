@@ -3,6 +3,7 @@ package dag
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"sort"
 	"sync"
@@ -240,7 +241,7 @@ func (n namedTask) Name() string {
 
 // Wrap the children with middleware
 func (n namedTask) Wrap(middleware ...func(Task) Task) {
-	if v, ok := n.target.(TaskContainer); ok {
+	if v, ok := n.target.(container); ok {
 		v.Wrap(middleware...)
 	}
 }
@@ -261,9 +262,9 @@ func Name(task Task) string {
 	return reflect.TypeOf(task).String()
 }
 
-// TaskContainer provides a container that holds tasks
-type TaskContainer interface {
-	Task
+// container holds children tasks
+type container interface {
+	// Wrap each child in the provided middleware
 	Wrap(middleware ...func(Task) Task)
 }
 
@@ -304,7 +305,7 @@ func (p *parallel) Wrap(middleware ...func(Task) Task) {
 }
 
 // Parallel executes the requested tasks in parallel
-func Parallel(tasks ...Task) TaskContainer {
+func Parallel(tasks ...Task) Task {
 	return &parallel{
 		raw:   tasks,
 		tasks: tasks,
@@ -338,7 +339,7 @@ func (s *serial) Wrap(middleware ...func(Task) Task) {
 }
 
 // Serial applies the tasks in serial
-func Serial(tasks ...Task) TaskContainer {
+func Serial(tasks ...Task) Task {
 	return &serial{
 		raw:   tasks,
 		tasks: tasks,
@@ -356,8 +357,9 @@ func wrapAll(tasks []Task, middleware ...func(Task) Task) []Task {
 // Wrap the Task and all its children with the specified middleware
 func Wrap(task Task, middleware ...func(Task) Task) Task {
 	name := Name(task)
+	fmt.Println(name)
 
-	if v, ok := task.(TaskContainer); ok {
+	if v, ok := task.(container); ok {
 		v.Wrap(middleware...)
 	}
 

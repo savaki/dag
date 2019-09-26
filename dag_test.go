@@ -26,25 +26,25 @@ func TestParallel(t *testing.T) {
 		var counter int64
 		var order []string
 		task := Parallel(counterTask(&counter))
-		task.Wrap(middleware(&order, "a"))
+		task = Wrap(task, middleware(&order, "a"))
 		err := task.Apply(ctx, record)
 		assert.Nil(t, err)
 		assert.Equal(t, 1, int(counter))
-		assert.Equal(t, []string{"a"}, order)
+		assert.Equal(t, []string{"a", "a"}, order)
 	})
 
 	t.Run("middleware ordering", func(t *testing.T) {
 		var counter int64
 		var order []string
 		task := Parallel(counterTask(&counter))
-		task.Wrap(
+		task = Wrap(task,
 			middleware(&order, "a"),
 			middleware(&order, "b"),
 		)
 		err := task.Apply(ctx, record)
 		assert.Nil(t, err)
 		assert.Equal(t, 1, int(counter))
-		assert.Equal(t, []string{"b", "a"}, order)
+		assert.Equal(t, []string{"b", "a", "b", "a"}, order)
 	})
 }
 
@@ -64,25 +64,25 @@ func TestSerial(t *testing.T) {
 		var counter int64
 		var order []string
 		task := Serial(counterTask(&counter))
-		task.Wrap(middleware(&order, "a"))
+		task = Wrap(task, middleware(&order, "a"))
 		err := task.Apply(ctx, record)
 		assert.Nil(t, err)
 		assert.Equal(t, 1, int(counter))
-		assert.Equal(t, []string{"a"}, order)
+		assert.Equal(t, []string{"a", "a"}, order)
 	})
 
 	t.Run("middleware ordering", func(t *testing.T) {
 		var counter int64
 		var order []string
 		task := Serial(counterTask(&counter))
-		task.Wrap(
+		task = Wrap(task,
 			middleware(&order, "a"),
 			middleware(&order, "b"),
 		)
 		err := task.Apply(ctx, record)
 		assert.Nil(t, err)
 		assert.Equal(t, 1, int(counter))
-		assert.Equal(t, []string{"b", "a"}, order)
+		assert.Equal(t, []string{"b", "a", "b", "a"}, order)
 	})
 }
 
@@ -222,7 +222,7 @@ func Test_wrap(t *testing.T) {
 		Serial(Serial(WithName("b", nopTask()))),
 		Parallel(WithName("c", nopTask())),
 	)
-	task.Wrap(func(t Task) Task {
+	task = Wrap(task, func(t Task) Task {
 		return TaskFunc(func(ctx context.Context, record *Record) error {
 			name := Name(t)
 			for n := Depth(ctx); n > 1; n-- {
@@ -239,7 +239,7 @@ func Test_wrap(t *testing.T) {
 	record := &Record{}
 	err := task.Apply(ctx, record)
 	assert.Nil(t, err)
-	assert.Equal(t, []string{"a", "Serial", "Serial", "b", "Parallel", "c"}, stack)
+	assert.Equal(t, []string{"Serial", "a", "Serial", "Serial", "b", "Parallel", "c"}, stack)
 }
 
 func TestPush(t *testing.T) {
