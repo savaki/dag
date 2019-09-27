@@ -1,4 +1,4 @@
-package task
+package builtin
 
 // FieldMapperFunc renames a field into another field. FieldMapperFunc should return
 // the original field name if no mapping is to be performed.
